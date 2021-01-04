@@ -1,13 +1,18 @@
 const puppeteer = require('puppeteer');
+const extractDataFromPage = require('./pageDataExtract.js');
+const formatAddress = require('./address_formatter.js');
 
 const searchUrlPrefix = "https://www.domain.com.au/sale/?suburb=largs-bay-sa-5016,semaphore-sa-5019&bedrooms=3-any&bathrooms=1-any&price=0-600000&excludeunderoffer=1&carspaces=1-any&page=";
 const MAX_PAGE_NUMBER = 100;
+const HEADLESS_MODE = false;
 
 (async () => {
     const browser = await puppeteer.launch({ 
-        headless: false
+        headless: HEADLESS_MODE
     });
     const page = await browser.newPage();
+
+    let extractionResults = [];
 
     let currentPageNumber = 1;
 
@@ -17,18 +22,26 @@ const MAX_PAGE_NUMBER = 100;
         let isLastPage = await page.evaluate(hasNoResults);
         if (isLastPage) break;
         
-        // const extractionResults = await page.evaluate(extractDataFromPage);
-        const extractionResults = await page.evaluate(extractDataFromPage);
+        const pageExtractionResults = await page.evaluate(extractDataFromPage);
+        extractionResults = extractionResults.concat(pageExtractionResults);
 
-        console.log('page ' + currentPageNumber)
-        console.log('extractionResults:', extractionResults);
+        console.log('Processing results page: ' + currentPageNumber)
 
         currentPageNumber++;
     } while (currentPageNumber < MAX_PAGE_NUMBER);
     
     await browser.close();
+    
+    // console.log(extractionResults);
 
+    let extractionResultsWithFormattedAddress = extractionResults.map(result => {
+        return {...result, ...formatAddress(result.address1, result.address2)};
+    })
+
+    console.log(extractionResultsWithFormattedAddress);
 })();
+
+
 
 /**
  * Checks to see if the page contains no results.
@@ -37,51 +50,6 @@ function hasNoResults() {
     return document.querySelectorAll('[alt="No search results"]').length !== 0
 }
 
-function extractDataFromPage() {
-    let results = Array.from(document.querySelector('[data-testid="results"]').childNodes);
-
-    data = results.map(function (result) {
-
-        let linkNode = result.querySelector('[itemprop="url"]');
-        if (linkNode !== null) {
-            url = linkNode.href;
-        } else {
-            url = null;
-        }
-
-        let priceNode = result.querySelector('[data-testid="listing-card-price"]');
-        if (priceNode !== null) {
-            price = priceNode.innerText;
-        } else {
-            price = null;
-        }
-
-        let addressLine1Node = result.querySelector('[data-testid="address-line1"]');
-        if (addressLine1Node !== null) {
-            addressLine1 = addressLine1Node.innerText;
-        } else {
-            addressLine1 = null;
-        }
-
-        let addressLine2Node = result.querySelector('[data-testid="address-line2"]');
-        if (addressLine2Node !== null) {
-            addressLine2 = addressLine2Node.innerText;
-        } else {
-            addressLine2 = null;
-        }
-
-        return {
-            url: url,
-            price: price,
-            address1: addressLine1,
-            address2: addressLine2
-        };
-    });
-
-    data = data.filter(entry => entry.url !== null);
-
-    return data;
-}
 
 function noOp() {
     return {}

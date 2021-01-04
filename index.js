@@ -8,13 +8,13 @@ const formatAddress = require('./address_formatter.js');
 const CachedGeocoder = require('./cached_geocoder.js');
 const GEOCODER_API_KEY = require('./secrets/geocoder_API_key.js');
 
-const searchUrlPrefix = "https://www.domain.com.au/sale/?suburb=largs-bay-sa-5016,semaphore-sa-5019&bedrooms=3-any&bathrooms=1-any&price=0-600000&excludeunderoffer=1&carspaces=1-any&page=";
+const searchUrlPrefix = "https://www.domain.com.au/sale/?suburb=largs-bay-sa-5016,semaphore-sa-5019,semaphore-park-sa-5019,semaphore-south-sa-5019,west-lakes-shore-sa-5020,tennyson-sa-5022,grange-sa-5022,henley-beach-sa-5022,henley-beach-south-sa-5022,west-beach-sa-5024,glenelg-north-sa-5045,glenelg-sa-5045,somerton-park-sa-5044,north-brighton-sa-5048,brighton-sa-5048,seacliff-sa-5049&bedrooms=3-any&bathrooms=1-any&price=0-550000&excludeunderoffer=1&carspaces=1-any&page=";
 
 const HEADLESS_MODE = false;
 const MAX_PAGE_NUMBER = 100;
 
 const GEOCODE_CACHE_FILEPATH = "./geocode_cache.json";
-const OUTPUT_JSON_FILEPATH = "./output.json";
+const OUTPUT_CSV_FILEPATH = "./output.csv";
 
 (async () => {
 
@@ -60,10 +60,20 @@ const OUTPUT_JSON_FILEPATH = "./output.json";
 
     geocoder.saveToCache();
 
-    fs.writeFileSync(OUTPUT_JSON_FILEPATH, JSON.stringify(extractedResultsWithCoordinates));
+    fs.writeFileSync(OUTPUT_CSV_FILEPATH, toCSV(extractedResultsWithCoordinates));
     
 })();
 
+function toCSV(targets) {
+    let csvString = "";
+    csvString += "url, price, lat, lon\n"
+    
+    targets.forEach(target => {
+        csvString += '"' + target.url + '","' + target.price + '",' + target.lat + ',' + target.lon + "\n"
+    })
+    
+    return csvString;
+}
 
 
 /**

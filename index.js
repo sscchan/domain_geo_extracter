@@ -1,10 +1,12 @@
-
+const fs = require('fs');
+const path = require('path');
 
 const puppeteer = require('puppeteer');
 
 const extractDataFromPage = require('./pageDataExtract.js');
 const formatAddress = require('./address_formatter.js');
-const CachedGeocoder = require('./cached_geocoder');
+const CachedGeocoder = require('./cached_geocoder.js');
+const GEOCODER_API_KEY = require('./secrets/geocoder_API_key.js');
 
 const searchUrlPrefix = "https://www.domain.com.au/sale/?suburb=largs-bay-sa-5016,semaphore-sa-5019&bedrooms=3-any&bathrooms=1-any&price=0-600000&excludeunderoffer=1&carspaces=1-any&page=";
 
@@ -12,10 +14,11 @@ const HEADLESS_MODE = false;
 const MAX_PAGE_NUMBER = 100;
 
 const GEOCODE_CACHE_FILEPATH = "./geocode_cache.json";
+const OUTPUT_JSON_FILEPATH = "./output.json";
 
 (async () => {
 
-    const geocoder = new CachedGeocoder(GEOCODE_CACHE_FILEPATH);
+    const geocoder = new CachedGeocoder(GEOCODE_CACHE_FILEPATH, GEOCODER_API_KEY);
 
     const browser = await puppeteer.launch({ 
         headless: HEADLESS_MODE
@@ -56,6 +59,9 @@ const GEOCODE_CACHE_FILEPATH = "./geocode_cache.json";
     console.log(extractedResultsWithCoordinates);
 
     geocoder.saveToCache();
+
+    fs.writeFileSync(OUTPUT_JSON_FILEPATH, JSON.stringify(extractedResultsWithCoordinates));
+    
 })();
 
 

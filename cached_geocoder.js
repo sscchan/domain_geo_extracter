@@ -1,10 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 
+const request = require('sync-request');
+
+
 class CachedGeocoder {
-    constructor(cacheFilePath) {
+    constructor(cacheFilePath, apiKey) {
         this.cache = {};
         this.cacheFilePath = cacheFilePath;
+        this.geocoderApiKey = apiKey;
 
         if (fs.existsSync(this.cacheFilePath)) {
             let rawData = fs.readFileSync(this.cacheFilePath);
@@ -16,13 +20,32 @@ class CachedGeocoder {
         fs.writeFileSync(this.cacheFilePath, JSON.stringify(this.cache));
     }
 
+    /**
+     *  Geocode using API from https://mappify.io/docs///
+     */
     getCoordinatesFromService(streetAddress, suburb, state, postCode) {
-        //https://mappify.io/docs///
-        // Dummy values at the moment
-        return {
-            lat: 123.4,
-            long: -22.3
-        }
+
+        const url = 'https://mappify.io/api/rpc/address/geocode/';
+        const payload = {
+            "streetAddress": streetAddress,
+            "suburb": suburb,
+            "postCode": postCode,
+            "state": state,
+            "apiKey": this.geocoderApiKey
+        };
+
+        let response = request(
+            'POST',
+            url,
+            {
+                json: payload
+            });
+        
+        let body = JSON.parse(response.getBody('utf8'));
+        let coordinates = body.result.location;
+        console.log(body);
+    
+        return coordinates;
     }
 
     getCoordinates(streetAddress, suburb, state, postCode) {
